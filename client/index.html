@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List App</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 2rem;
+      background: #f7f7fa;
+      color: #222;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      color: #4f8cff;
+      margin-bottom: 2rem;
+    }
+    #todo-form {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    #todo-input {
+      padding: 0.5rem 1rem;
+      border: 1px solid #bfc9d1;
+      border-radius: 4px 0 0 4px;
+      outline: none;
+      font-size: 1rem;
+      width: 250px;
+      transition: border 0.2s;
+    }
+    #todo-input:focus {
+      border-color: #4f8cff;
+    }
+    #todo-form button {
+      padding: 0.5rem 1.2rem;
+      border: none;
+      background: #4f8cff;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 0 4px 4px 0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    #todo-form button:hover {
+      background: #2563eb;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    li {
+      background: #fff;
+      margin-bottom: 0.75rem;
+      padding: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(79,140,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: box-shadow 0.2s;
+    }
+    li:hover {
+      box-shadow: 0 4px 16px rgba(79,140,255,0.13);
+    }
+    .done span {
+      text-decoration: line-through;
+      color: #bfc9d1;
+    }
+    li button {
+      margin-left: 0.5rem;
+      padding: 0.3rem 0.8rem;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      background: #e5eaf1;
+      color: #4f8cff;
+      transition: background 0.2s, color 0.2s;
+    }
+    li button:hover {
+      background: #4f8cff;
+      color: #fff;
+    }
+    @media (max-width: 600px) {
+      #todo-input {
+        width: 120px;
+      }
+      ul {
+        max-width: 98vw;
+      }
+      li {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      li button {
+        margin: 0.3rem 0 0 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Todo List</h1>
+  <form id="todo-form">
+    <input type="text" id="todo-input" placeholder="Add a new todo" required />
+    <button type="submit">Add</button>
+  </form>
+  <ul id="todo-list"></ul>
+
+  <script>
+    const API = '/todos';
+    const list = document.getElementById('todo-list');
+    const form = document.getElementById('todo-form');
+    const input = document.getElementById('todo-input');
+
+    function renderTodos(todos) {
+      list.innerHTML = '';
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.className = todo.done ? 'done' : '';
+        li.innerHTML = `
+          <span>${todo.text}</span>
+          <button onclick="toggleDone(${todo.id}, ${!todo.done})">${todo.done ? 'Undo' : 'Done'}</button>
+          <button onclick="editTodo(${todo.id}, '${encodeURIComponent(todo.text)}')">Edit</button>
+          <button onclick="deleteTodo(${todo.id})">Delete</button>
+        `;
+        list.appendChild(li);
+      });
+    }
+
+    async function fetchTodos() {
+      const res = await fetch(API);
+      const todos = await res.json();
+      renderTodos(todos);
+    }
+
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      input.value = '';
+      fetchTodos();
+    };
+
+    window.toggleDone = async (id, done) => {
+      await fetch(`${API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done })
+      });
+      fetchTodos();
+    };
+
+    window.editTodo = (id, text) => {
+      const newText = prompt('Edit todo:', decodeURIComponent(text));
+      if (newText !== null && newText.trim() !== '') {
+        fetch(`${API}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: newText })
+        }).then(fetchTodos);
+      }
+    };
+
+    window.deleteTodo = async id => {
+      await fetch(`${API}/${id}`, { method: 'DELETE' });
+      fetchTodos();
+    };
+
+    fetchTodos();
+  </script>
+</body>
+</html> 
