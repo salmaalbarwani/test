@@ -46,10 +46,12 @@ describe('To-Do List API', () => {
     const id = addRes.body.id;
     await request(app).put(`/todos/${id}`).send({ done: true });
     let getRes = await request(app).get('/todos');
-    expect(getRes.body[0].done).toBe(true);
+    const updatedTodo = getRes.body.find(t => t.id === id);
+    expect(updatedTodo.done).toBe(true);
     await request(app).put(`/todos/${id}`).send({ done: false });
     getRes = await request(app).get('/todos');
-    expect(getRes.body[0].done).toBe(false);
+    const undoneTodo = getRes.body.find(t => t.id === id);
+    expect(undoneTodo.done).toBe(false);
   });
 
   it('should delete a todo', async () => {
@@ -63,10 +65,12 @@ describe('To-Do List API', () => {
   });
 
   it('should persist todos to file', async () => {
-    await request(app).post('/todos').send({ text: 'Persist me' });
+    const addRes = await request(app).post('/todos').send({ text: 'Persist me' });
+    const id = addRes.body.id;
     expect(fs.existsSync(TODOS_FILE)).toBe(true);
     const data = JSON.parse(fs.readFileSync(TODOS_FILE, 'utf8'));
+    const persistedTodo = data.todos.find(t => t.id === id);
     expect(Array.isArray(data.todos)).toBe(true);
-    expect(data.todos[0].text).toBe('Persist me');
+    expect(persistedTodo.text).toBe('Persist me');
   });
 }); 
